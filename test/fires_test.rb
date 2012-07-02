@@ -5,7 +5,7 @@ class FiresTest < Test::Unit::TestCase
     @james = create_person(:email => 'james@giraffesoft.ca')
     @mat   = create_person(:email => 'mat@giraffesoft.ca')
   end
-  
+
   def test_should_fire_the_appropriate_callback
     @list = List.new(hash_for_list(:author => @james));
     TimelineEvent.expects(:create!).with(:actor => @james, :subject => @list, :event_type => 'list_created_or_updated')
@@ -20,11 +20,32 @@ class FiresTest < Test::Unit::TestCase
     TimelineEvent.stubs(:create!)
     @list.save
     @comment = Comment.new(:body => 'cool list!', :author => @mat, :list => @list)
-    TimelineEvent.expects(:create!).with(:actor             => @mat, 
-                                         :subject           => @comment, 
-                                         :secondary_subject => @list, 
+    TimelineEvent.expects(:create!).with(:actor             => @mat,
+                                         :subject           => @comment,
+                                         :secondary_subject => @list,
                                          :event_type        => 'comment_created')
     @comment.save
+  end
+
+  def test_should_fire_on_custom_methods
+    TimelineEvent.expects(:create!)#.with(:subject => @james, :event_type => 'did_yet_another_thing')
+    @james.do_yet_another_thing
+  end
+
+  def test_should_fire_on_custom_methods_only_if_the_if_condition_evaluates_to_true
+    TimelineEvent.expects(:create!).once
+    @james.do_something
+
+    @james.new_watcher = @mat
+    @james.do_something
+  end
+
+  def test_should_fire_on_custom_methods_only_if_the_unless_condition_evaluates_to_false
+    TimelineEvent.expects(:create!).once
+    @james.do_something_else
+
+    @james.new_watcher = @mat
+    @james.do_something_else
   end
 
   def test_exception_raised_if_on_missing
@@ -43,19 +64,19 @@ class FiresTest < Test::Unit::TestCase
     @james.new_watcher = @mat
     @james.save
   end
-  
+
   def test_should_not_fire_if_the_if_condition_evaluates_to_false
     TimelineEvent.expects(:create!).never
     @james.new_watcher = nil
     @james.save
   end
-  
+
   def test_should_fire_event_with_symbol_based_if_condition_that_is_true
     @james.fire = true
     TimelineEvent.expects(:create!).with(:subject => @james, :event_type => 'person_updated')
     @james.save
   end
-  
+
   def test_should_fire_event_with_symbol_based_if_condition
     @james.fire = false
     TimelineEvent.expects(:create!).never
@@ -69,9 +90,9 @@ class FiresTest < Test::Unit::TestCase
     @comment = Comment.new(:body => 'cool list!', :author => @mat, :list => @list)
     TimelineEvent.stubs(:create!).with(has_entry(:event_type, "comment_created"))
     @comment.save
-    TimelineEvent.expects(:create!).with(:actor             => @mat, 
-                                         :subject           => @list, 
-                                         :secondary_subject => @comment, 
+    TimelineEvent.expects(:create!).with(:actor             => @mat,
+                                         :subject           => @list,
+                                         :secondary_subject => @comment,
                                          :event_type        => 'comment_deleted')
     @comment.destroy
   end
