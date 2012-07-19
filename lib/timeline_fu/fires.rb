@@ -47,11 +47,13 @@ module TimelineFu
           send(:"after_#{on}", method_name, :if => _if, :unless => _unless)
         else
           define_method(:"#{on}_with_fire") do |*args|
-            send("#{on}_without_fire", *args)
+            ret = send("#{on}_without_fire", *args)
 
             do_not_fire = _if && !_if.call(self)
             do_not_fire ||= _unless && _unless.call(self)
             send(method_name) unless do_not_fire
+
+            ret
           end
 
           begin
