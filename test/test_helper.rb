@@ -45,12 +45,28 @@ end
 
 class Person < ActiveRecord::Base
   attr_accessor :new_watcher, :fire
-  
-  fires :follow_created,  :on     => :update, 
-                          :actor  => lambda { |person| person.new_watcher }, 
-                          :if     => lambda { |person| !person.new_watcher.nil? }
-  fires :person_updated,  :on     => :update,
-                          :if     => :fire?
+
+  fires :follow_created,        :on     => :update,
+                                :actor  => lambda { |person| person.new_watcher },
+                                :if     => lambda { |person| !person.new_watcher.nil? }
+  fires :person_updated,        :on     => :update,
+                                :if     => :fire?
+
+  def do_something
+  end
+  fires :did_something,         :on     => :do_something,
+                                :actor  => lambda { |person| person.new_watcher },
+                                :if     => lambda { |person| !person.new_watcher.nil? }
+
+  def do_something_else
+  end
+  fires :did_something_else,    :on     => :do_something_else,
+                                :actor  => lambda { |person| person.new_watcher },
+                                :unless => lambda { |person| person.new_watcher.nil? }
+
+  def do_yet_another_thing
+  end
+  fires :did_yet_another_thing, :on     => :do_yet_another_thing
 
   def fire?
     new_watcher.nil? && fire
@@ -60,8 +76,8 @@ end
 class List < ActiveRecord::Base
   belongs_to :author, :class_name => "Person"
   has_many :comments
-  
-  fires :list_created_or_updated,  :actor  => :author, 
+
+  fires :list_created_or_updated,  :actor  => :author,
                                    :on     => [:create, :update]
 end
 
@@ -111,15 +127,15 @@ class Test::Unit::TestCase
     def hash_for_list(opts = {})
       {:title => 'whatever'}.merge(opts)
     end
-    
+
     def create_list(opts = {})
       List.create!(hash_for_list(opts))
     end
-    
+
     def hash_for_person(opts = {})
       {:email => 'james'}.merge(opts)
     end
-    
+
     def create_person(opts = {})
       Person.create!(hash_for_person(opts))
     end

@@ -43,7 +43,25 @@ module TimelineFu
           end
         end
 
-        send(:"after_#{on}", method_name, :if => _if, :unless => _unless)
+        if respond_to?(:"after_#{on}")
+          send(:"after_#{on}", method_name, :if => _if, :unless => _unless)
+        else
+          define_method(:"#{on}_with_fire") do |*args|
+            ret = send("#{on}_without_fire", *args)
+
+            do_not_fire = _if && !_if.call(self)
+            do_not_fire ||= _unless && _unless.call(self)
+            send(method_name) unless do_not_fire
+
+            ret
+          end
+
+          begin
+            alias_method_chain on, :fire
+          rescue NameError
+            raise "undefined method `#{on}' for class `#{name}'. Make sure to call `fires' after defining the method."
+          end
+        end
       end
     end
   end
